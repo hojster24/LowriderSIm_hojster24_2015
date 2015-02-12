@@ -1,18 +1,20 @@
 package lRsim15.tilegame;
 
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferStrategy;
 
-import javax.swing.JFrame;
-
 import lRsim15.tilegame.display.Display;
 import lRsim15.tilegame.gfx.Assets;
+import lRsim15.tilegame.input.KeyManager;
+import lRsim15.tilegame.states.GameState;
+import lRsim15.tilegame.states.MenuState;
+import lRsim15.tilegame.states.SettingsState;
+import lRsim15.tilegame.states.State;
 
 public class Game implements Runnable {
 
 	private Display display;
-	public static final int WIDTH = 496, HEIGHT = 384, SCALE = 2;
+	public static final int WIDTH = 496, HEIGHT = 384, SCALE = 3;
 	public int width, height;
 	public String title;
 	
@@ -22,21 +24,35 @@ public class Game implements Runnable {
 	private BufferStrategy bs;
 	private Graphics g;
 	
+	//STATES 
+	private State gameState;
+	private State menuState;
+	private State settingsState;
+	
+	private KeyManager keyManager;
+	
 	public Game(String title, int width, int height){
 		this.width = width;
 		this.height = height;
 		this.title = title;
+		keyManager = new KeyManager();
 	}
 	
 	private void init(){
 		display = new Display(title, width, height);
+		display.getFrame().addKeyListener(keyManager);
 		Assets.init();
+		
+		gameState = new GameState(this);
+		menuState = new MenuState(this);
+		settingsState = new SettingsState(this);
+		State.setState(gameState);
 	}
 	
-	int x = 0;
-	
 	private void tick(){
-		x += 1;
+		keyManager.tick();
+		if(State.getState() != null)
+			State.getState().tick();
 	}
 	
 	private void render(){
@@ -49,9 +65,9 @@ public class Game implements Runnable {
 		//Clear Screen
 		g.clearRect(0, 0, width, height);
 		//Draw Here!
-		
-		g.drawImage(Assets.player, x, 10, null);
-		
+		if(State.getState() != null)
+			State.getState().render(g);
+
 		//End Drawing!
 		bs.show();
 		g.dispose();
@@ -91,6 +107,10 @@ public class Game implements Runnable {
 		
 		stop();
 		
+	}
+	
+	public KeyManager getKeyManager(){
+		return keyManager;
 	}
 	
 	public synchronized void start(){
